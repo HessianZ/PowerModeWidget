@@ -3,10 +3,11 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Power Mode Widget" Width="388" Height="170"
         WindowStyle="None" ResizeMode="NoResize" AllowsTransparency="True"
-        Background="Transparent" Topmost="True" WindowStartupLocation="Manual"
+        Background="Transparent" Topmost="False" ShowInTaskbar="False" ShowActivated="False" WindowStartupLocation="Manual"
+        MouseMove="Window_MouseMove" MouseLeftButtonUp="Window_MouseLeftButtonUp" LostMouseCapture="Window_LostMouseCapture"
         FontFamily="Segoe UI, Microsoft YaHei UI" Foreground="#F2F3F8">
     <Window.Resources>
-        <Style x:Key="HeaderButton" TargetType="ToggleButton">
+        <Style x:Key="HeaderButton" TargetType="Button">
             <Setter Property="Width" Value="28" />
             <Setter Property="Height" Value="28" />
             <Setter Property="Foreground" Value="#939BAF" />
@@ -15,7 +16,7 @@
             <Setter Property="Cursor" Value="Hand" />
             <Setter Property="Template">
                 <Setter.Value>
-                    <ControlTemplate TargetType="ToggleButton">
+                    <ControlTemplate TargetType="Button">
                         <Border x:Name="Surface" Background="{TemplateBinding Background}"
                                 BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="1" CornerRadius="7">
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
@@ -24,10 +25,6 @@
                             <Trigger Property="IsMouseOver" Value="True">
                                 <Setter TargetName="Surface" Property="Background" Value="#293044" />
                                 <Setter Property="Foreground" Value="#F2F3F8" />
-                            </Trigger>
-                            <Trigger Property="IsChecked" Value="True">
-                                <Setter TargetName="Surface" Property="Background" Value="#302D48" />
-                                <Setter Property="Foreground" Value="#C3B4FF" />
                             </Trigger>
                             <Trigger Property="IsKeyboardFocused" Value="True">
                                 <Setter TargetName="Surface" Property="BorderBrush" Value="#E0D8FF" />
@@ -84,21 +81,12 @@
             </Grid.RowDefinitions>
             <Grid MouseLeftButtonDown="Header_MouseLeftButtonDown" Background="Transparent">
                 <TextBlock Text="电源模式" FontSize="14" FontWeight="SemiBold" VerticalAlignment="Center" />
-                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                    <ToggleButton x:Name="TopmostButton" IsChecked="True" Style="{StaticResource HeaderButton}"
-                                  ToolTip="窗口置顶" AutomationProperties.Name="窗口置顶"
-                                  Click="TopmostButton_Click" Margin="0,0,5,0">
-                        <Path Data="M 4,1 L 12,1 M 6,1 L 6,6 L 3,9 L 13,9 L 10,6 L 10,1 M 8,9 L 8,15"
-                              Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ToggleButton}}"
-                              StrokeThickness="1.5" Width="16" Height="16" />
-                    </ToggleButton>
-                    <ToggleButton Style="{StaticResource HeaderButton}" Click="CloseButton_Click"
-                                  ToolTip="退出" AutomationProperties.Name="退出">
-                        <Path Data="M 3,3 L 13,13 M 13,3 L 3,13"
-                              Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ToggleButton}}"
-                              StrokeThickness="1.5" Width="16" Height="16" />
-                    </ToggleButton>
-                </StackPanel>
+                <Button x:Name="CloseButton" Style="{StaticResource HeaderButton}" Click="CloseButton_Click"
+                        HorizontalAlignment="Right" ToolTip="退出" AutomationProperties.Name="退出">
+                    <Path Data="M 3,3 L 13,13 M 13,3 L 3,13"
+                          Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                          StrokeThickness="1.5" Width="16" Height="16" />
+                </Button>
             </Grid>
             <Grid Grid.Row="2">
                 <Grid.ColumnDefinitions>

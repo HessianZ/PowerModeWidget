@@ -1,7 +1,7 @@
+using System.Windows.Controls.Primitives;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Controls.Primitives;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
@@ -14,6 +14,7 @@ internal static class UiSmoke
         // A provider can report success while Windows refuses to apply a mode.
         var api = new FakePowerApi { Overlay = Guid.Empty, IgnoreSet = true };
         var window = new MainWindow(new PowerModeService(api));
+        Check(!window.ShowInTaskbar && !window.ShowActivated && !window.Topmost, "Desktop shell policy regressed.");
         try
         {
             window.RaiseEvent(new RoutedEventArgs(FrameworkElement.LoadedEvent));
@@ -48,21 +49,8 @@ internal static class UiSmoke
                 Check(native.ReadOverlay(out var current) == 0 && current == original, "Startup changed power mode.");
                 AssertMode(window, service.ReadCurrentMode());
             });
-            test("UI pin toggles topmost and window can be moved", () =>
-            {
-                var pin = (ToggleButton)window.FindName("TopmostButton");
-                Check(window.Topmost, "Widget should initially be pinned.");
-                pin.IsChecked = false;
-                pin.RaiseEvent(new RoutedEventArgs(ButtonBase.ClickEvent));
-                Check(!window.Topmost, "Unpin failed.");
-                pin.IsChecked = true;
-                pin.RaiseEvent(new RoutedEventArgs(ButtonBase.ClickEvent));
-                Check(window.Topmost, "Pin failed.");
-                var left = window.Left;
-                window.Left = left - 10;
-                Check(Math.Abs(window.Left - (left - 10)) < 0.1, "Window movement failed.");
-                window.Left = left;
-            });
+            DesktopHostFailureSmoke.Run(test);
+            DesktopShellSmoke.Run(window, test);
             foreach (var mode in Enum.GetValues<PowerMode>())
             {
                 test($"UI click {mode} changes Windows and highlights one button", () =>
@@ -126,7 +114,7 @@ internal static class UiSmoke
         encoder.Save(output);
     }
 
-    private static void Pump(TimeSpan duration)
+    internal static void Pump(TimeSpan duration)
     {
         var frame = new DispatcherFrame();
         var timer = new DispatcherTimer { Interval = duration };

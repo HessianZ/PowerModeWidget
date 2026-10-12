@@ -1,6 +1,6 @@
 # PowerModeWidget
 
-免费的 Windows 11 桌面电源模式小组件。用三个明显的按钮切换 **最佳能效 / 平衡 / 最佳性能**，并显示系统当前模式。
+免费的 Windows 11 桌面电源模式小组件，嵌入桌面层。用三个明显的按钮切换 **最佳能效 / 平衡 / 最佳性能**，并显示系统当前模式。
 
 [下载最新版](https://github.com/HessianZ/PowerModeWidget/releases/latest)
 
@@ -10,14 +10,17 @@
 
 1. 下载 `PowerModeWidget-win-x64.zip` 并解压。
 2. 双击 `PowerModeWidget.exe`，点击想要的模式。
-3. 拖动窗口顶部区域移动小组件；使用置顶开关控制它是否覆盖其他窗口。
+3. 拖动顶部标题区域移动小组件；点击右上角 × 退出。
 
-切换后会读取系统状态确认结果；在 Windows 设置中切换模式，小组件也会同步显示。关闭窗口即可退出。
+小组件附着在 Explorer 桌面上，不显示任务栏图标，也不出现在 Alt+Tab 列表中。普通应用窗口会遮住它；点击任务栏“显示桌面”或按 Win+D 可以再次访问。程序在后台运行，点击 × 即可结束。
+
+切换后会读取系统状态确认结果；在 Windows 设置中切换模式，小组件也会同步显示。
 
 ## 兼容性与权限
 
 - 面向 Windows 11 x64；发布包内含 .NET 运行时，无需另外安装 .NET。
 - 默认以普通用户权限运行，不需要管理员权限。
+- 桌面附着使用 Explorer 内部窗口结构；要求使用 Windows 默认 Explorer 桌面。找不到可用桌面宿主时会提示失败并退出。
 - 切换的是 Windows **电源模式**，不是控制面板的传统电源计划。
 - 设备和当前电源计划必须支持电源模式；通常需要使用“平衡”基础电源计划。程序不会自动改变基础电源计划，不支持的情况会显示错误。
 - 单文件程序首次启动会将原生运行时文件解压到用户的临时目录。
@@ -41,13 +44,13 @@ dotnet run --project src/PowerModeWidget/PowerModeWidget.csproj
 dotnet run --project tests/PowerModeWidget.Tests/PowerModeWidget.Tests.csproj -c Release -- --live
 ```
 
-实际界面按钮、置顶、外部同步及错误反馈验收：
+实际桌面附着、按钮、外部同步及错误反馈验收：
 
 ```powershell
 dotnet run --project tests/PowerModeWidget.Tests/PowerModeWidget.Tests.csproj -c Release -- --ui
 ```
 
-该命令也会临时切换并恢复原始电源模式，截图和报告位于 `artifacts/`。
+该命令会临时切换并恢复原始电源模式，短暂显示桌面后恢复应用窗口；截图和报告位于 `artifacts/`。
 
 发布自包含单文件：
 

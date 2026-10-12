@@ -1,6 +1,7 @@
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Threading;
 
@@ -11,6 +12,8 @@ public partial class MainWindow : Window
     private readonly PowerModeService _powerModes;
     private readonly DispatcherTimer _refreshTimer = new() { Interval = TimeSpan.FromSeconds(2) };
     private DateTime _switchErrorUntil;
+    private bool _dragging;
+    private Vector _dragOffset;
     private static readonly Brush NormalStatus = new SolidColorBrush(Color.FromRgb(166, 175, 194));
     private static readonly Brush ErrorStatus = new SolidColorBrush(Color.FromRgb(255, 159, 166));
     private static readonly Brush ActiveStatus = new SolidColorBrush(Color.FromRgb(187, 166, 255));
@@ -23,9 +26,21 @@ public partial class MainWindow : Window
         InitializeComponent();
         Loaded += (_, _) =>
         {
-            var workArea = SystemParameters.WorkArea;
-            Left = Math.Max(workArea.Left, workArea.Right - ActualWidth - 24);
-            Top = Math.Max(workArea.Top, workArea.Bottom - ActualHeight - 24);
+            if (new WindowInteropHelper(this).Handle != IntPtr.Zero)
+            {
+                try
+                {
+                    DesktopHost.Attach(this);
+                    DesktopHost.PlaceBottomRight(this);
+                }
+                catch (Exception error)
+                {
+                    MessageBox.Show($"无法附着到 Windows 桌面。\n{error.Message}", "Power Mode Widget",
+                        MessageBoxButton.OK, MessageBoxImage.Error);
+                    Close();
+                    return;
+                }
+            }
             RefreshMode();
             _refreshTimer.Start();
         };
@@ -99,12 +114,45 @@ public partial class MainWindow : Window
     private void EfficiencyButton_Click(object sender, RoutedEventArgs e) => SelectMode(PowerMode.Efficiency);
     private void BalancedButton_Click(object sender, RoutedEventArgs e) => SelectMode(PowerMode.Balanced);
     private void PerformanceButton_Click(object sender, RoutedEventArgs e) => SelectMode(PowerMode.Performance);
-    private void TopmostButton_Click(object sender, RoutedEventArgs e) => Topmost = TopmostButton.IsChecked == true;
     private void CloseButton_Click(object sender, RoutedEventArgs e) => Close();
 
     private void Header_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
-        if (e.OriginalSource is TextBlock or Grid && e.ButtonState == MouseButtonState.Pressed)
-            DragMove();
+        if (e.OriginalSource is not (TextBlock or Grid) || e.ButtonState != MouseButtonState.Pressed)
+            return;
+
+        _dragOffset = PointToScreen(e.GetPosition(this)) - PointToScreen(new Point(0, 0));
+        _dragging = CaptureMouse();
+        e.Handled = _dragging;
+    }
+
+    private void Window_MouseMove(object sender, MouseEventArgs e)
+    {
+        if (!_dragging) return;
+        if (e.LeftButton != MouseButtonState.Pressed)
+        {
+            EndDrag();
+            return;
+        }
+
+        var screenPosition = PointToScreen(e.GetPosition(this)) - _dragOffset;
+        try
+        {
+            DesktopHost.Move(this, screenPosition.X, screenPosition.Y);
+        }
+        catch (Exception error)
+        {
+            EndDrag();
+            DisplayError("移动失败，请重试", error);
+        }
+    }
+
+    private void Window_MouseLeftButtonUp(object sender, MouseButtonEventArgs e) => EndDrag();
+    private void Window_LostMouseCapture(object sender, MouseEventArgs e) => _dragging = false;
+
+    private void EndDrag()
+    {
+        _dragging = false;
+        if (IsMouseCaptured) ReleaseMouseCapture();
     }
 }
