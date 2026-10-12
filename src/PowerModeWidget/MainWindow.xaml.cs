@@ -7,7 +7,7 @@ using System.Windows.Threading;
 
 namespace PowerModeWidget;
 
-public partial class MainWindow : Window
+public partial class MainWindow : UserControl
 {
     private readonly PowerModeService _powerModes;
     private readonly DispatcherTimer _refreshTimer = new() { Interval = TimeSpan.FromSeconds(2) };
@@ -26,26 +26,19 @@ public partial class MainWindow : Window
         InitializeComponent();
         Loaded += (_, _) =>
         {
-            if (new WindowInteropHelper(this).Handle != IntPtr.Zero)
-            {
-                try
-                {
-                    DesktopHost.Attach(this);
-                    DesktopHost.PlaceBottomRight(this);
-                }
-                catch (Exception error)
-                {
-                    MessageBox.Show($"无法附着到 Windows 桌面。\n{error.Message}", "Power Mode Widget",
-                        MessageBoxButton.OK, MessageBoxImage.Error);
-                    Close();
-                    return;
-                }
-            }
             RefreshMode();
             _refreshTimer.Start();
         };
         _refreshTimer.Tick += (_, _) => RefreshMode();
-        Closed += (_, _) => _refreshTimer.Stop();
+        Unloaded += (_, _) => _refreshTimer.Stop();
+    }
+
+    internal HwndSource Show() => DesktopHost.Show(this);
+
+    internal void Close()
+    {
+        _refreshTimer.Stop();
+        (PresentationSource.FromVisual(this) as HwndSource)?.Dispose();
     }
 
     private void RefreshMode()

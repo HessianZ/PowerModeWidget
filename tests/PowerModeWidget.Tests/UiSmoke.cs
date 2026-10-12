@@ -1,5 +1,6 @@
 using System.Windows.Controls.Primitives;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -14,7 +15,7 @@ internal static class UiSmoke
         // A provider can report success while Windows refuses to apply a mode.
         var api = new FakePowerApi { Overlay = Guid.Empty, IgnoreSet = true };
         var window = new MainWindow(new PowerModeService(api));
-        Check(!window.ShowInTaskbar && !window.ShowActivated && !window.Topmost, "Desktop shell policy regressed.");
+        Check(PresentationSource.FromVisual(window) is null, "Constructing UI must not create a native desktop host.");
         try
         {
             window.RaiseEvent(new RoutedEventArgs(FrameworkElement.LoadedEvent));
@@ -25,7 +26,7 @@ internal static class UiSmoke
             var error = status.ToolTip;
             Pump(TimeSpan.FromMilliseconds(2200));
             Check(status.Text.Contains("切换失败") && Equals(error, status.ToolTip), "Polling erased switch error too soon.");
-            foreach (var mode in Enum.GetValues<PowerMode>())
+            foreach (var mode in Enum.GetValues(typeof(PowerMode)).Cast<PowerMode>())
                 Check(((Button)window.FindName($"{mode}Button")).Tag is null, "Failed switch should not display selection.");
             var balanced = (Button)window.FindName("BalancedButton");
             balanced.RaiseEvent(new RoutedEventArgs(ButtonBase.ClickEvent));
@@ -40,9 +41,10 @@ internal static class UiSmoke
         Check(native.ReadOverlay(out var original) == 0, "Cannot capture original overlay.");
         var service = new PowerModeService();
         var window = new MainWindow();
+        var handle = IntPtr.Zero;
         try
         {
-            window.Show();
+            handle = window.Show().Handle;
             Pump(TimeSpan.FromMilliseconds(150));
             test("UI startup preserves actual power mode", () =>
             {
@@ -51,7 +53,7 @@ internal static class UiSmoke
             });
             DesktopHostFailureSmoke.Run(test);
             DesktopShellSmoke.Run(window, test);
-            foreach (var mode in Enum.GetValues<PowerMode>())
+            foreach (var mode in Enum.GetValues(typeof(PowerMode)).Cast<PowerMode>())
             {
                 test($"UI click {mode} changes Windows and highlights one button", () =>
                 {
@@ -74,18 +76,30 @@ internal static class UiSmoke
         }
         finally
         {
-            window.Close();
-            test("UI tests restore original Windows power mode", () =>
+            try
             {
-                Check(native.SetOverlay(original) == 0, "Restore API failed.");
-                Check(native.ReadOverlay(out var restored) == 0 && restored == original, "Original mode not restored.");
-            });
+                if (handle != IntPtr.Zero)
+                    test("UI exit button disposes the native widget HWND", () =>
+                    {
+                        ((Button)window.FindName("CloseButton")).RaiseEvent(new RoutedEventArgs(ButtonBase.ClickEvent));
+                        Check(!IsWindow(handle), "Exit button leaked the native widget HWND.");
+                    });
+                window.Close();
+            }
+            finally
+            {
+                test("UI tests restore original Windows power mode", () =>
+                {
+                    Check(native.SetOverlay(original) == 0, "Restore API failed.");
+                    Check(native.ReadOverlay(out var restored) == 0 && restored == original, "Original mode not restored.");
+                });
+            }
         }
     }
 
     private static void AssertMode(MainWindow window, PowerMode? expected)
     {
-        foreach (var mode in Enum.GetValues<PowerMode>())
+        foreach (var mode in Enum.GetValues(typeof(PowerMode)).Cast<PowerMode>())
         {
             var button = (Button)window.FindName($"{mode}Button");
             Check((button.Tag as string == "Active") == (mode == expected), $"Wrong highlight for {mode}.");
@@ -101,7 +115,7 @@ internal static class UiSmoke
         Check(status.Text.Contains(name), $"Wrong status: {status.Text}");
     }
 
-    private static void Capture(Window window, string name)
+    private static void Capture(FrameworkElement window, string name)
     {
         window.UpdateLayout();
         var image = new RenderTargetBitmap((int)window.ActualWidth * 2, (int)window.ActualHeight * 2,
@@ -122,6 +136,10 @@ internal static class UiSmoke
         timer.Start();
         Dispatcher.PushFrame(frame);
     }
+
+    [DllImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool IsWindow(IntPtr handle);
 
     private static void Check(bool condition, string message)
     {

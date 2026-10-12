@@ -1,7 +1,7 @@
 using System.ComponentModel;
 using System.IO;
 using System.Runtime.InteropServices;
-using System.Text.Json;
+using System.Web.Script.Serialization;
 using PowerModeWidget;
 
 internal static class Program
@@ -45,7 +45,7 @@ internal static class Program
         };
         var absolutePath = Path.GetFullPath(reportPath);
         Directory.CreateDirectory(Path.GetDirectoryName(absolutePath)!);
-        File.WriteAllText(absolutePath, JsonSerializer.Serialize(report, new JsonSerializerOptions { WriteIndented = true }));
+        File.WriteAllText(absolutePath, new JavaScriptSerializer().Serialize(report));
         Console.WriteLine($"Report: {absolutePath}");
         Console.WriteLine($"{Results.Count - failed} passed, {failed} failed");
         return failed == 0 ? 0 : 1;
@@ -139,7 +139,7 @@ internal static class Program
         var service = new PowerModeService();
         try
         {
-            foreach (var mode in Enum.GetValues<PowerMode>())
+            foreach (var mode in Enum.GetValues(typeof(PowerMode)).Cast<PowerMode>())
             {
                 Run($"Live set/read {mode}; base plan preserved", () =>
                 {
@@ -213,17 +213,23 @@ internal static class Program
     [DllImport("kernel32.dll", ExactSpelling = true)]
     private static extern IntPtr LocalFree(IntPtr memory);
 
-    private sealed record TestResult(string Name, bool Passed, string? Error);
+    private sealed class TestResult
+    {
+        public TestResult(string name, bool passed, string? error) { Name = name; Passed = passed; Error = error; }
+        public string Name { get; }
+        public bool Passed { get; }
+        public string? Error { get; }
+    }
 }
 
 internal sealed class FakePowerApi : IPowerApi
 {
     public Guid Overlay { get; set; }
     public Guid LastRequested { get; private set; }
-    public uint ReadError { get; init; }
-    public uint SetError { get; init; }
-    public bool IgnoreSet { get; init; }
-    public bool MissingApi { get; init; }
+    public uint ReadError { get; set; }
+    public uint SetError { get; set; }
+    public bool IgnoreSet { get; set; }
+    public bool MissingApi { get; set; }
     public int ReadCalls { get; private set; }
     public int SetCalls { get; private set; }
 

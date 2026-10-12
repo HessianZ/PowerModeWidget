@@ -9,10 +9,19 @@ internal static class Program
     private static void Main()
     {
         using var instance = new Mutex(true, @"Local\HessianZ.PowerModeWidget", out var firstInstance);
-        if (!firstInstance)
-            return;
+        if (!firstInstance) return;
 
-        var application = new Application { ShutdownMode = ShutdownMode.OnMainWindowClose };
-        application.Run(new MainWindow());
+        var application = new Application { ShutdownMode = ShutdownMode.OnExplicitShutdown };
+        try
+        {
+            using var host = DesktopHost.Show(new MainWindow());
+            host.Disposed += (_, _) => application.Shutdown();
+            application.Run();
+        }
+        catch (Exception error)
+        {
+            MessageBox.Show($"无法启动桌面小组件。\n{error.Message}", "Power Mode Widget",
+                MessageBoxButton.OK, MessageBoxImage.Error);
+        }
     }
 }

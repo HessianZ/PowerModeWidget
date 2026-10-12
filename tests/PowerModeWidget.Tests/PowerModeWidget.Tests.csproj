@@ -1,13 +1,16 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net10.0-windows</TargetFramework>
+    <TargetFramework>net48</TargetFramework>
     <UseWPF>true</UseWPF>
+    <LangVersion>latest</LangVersion>
+    <PlatformTarget>x64</PlatformTarget>
     <ApplicationManifest>../../src/PowerModeWidget/app.manifest</ApplicationManifest>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="System.Web.Extensions" />
     <ProjectReference Include="../../src/PowerModeWidget/PowerModeWidget.csproj" />
   </ItemGroup>
 </Project>

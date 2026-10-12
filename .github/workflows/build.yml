@@ -27,13 +27,14 @@ jobs:
         run: dotnet build src/PowerModeWidget/PowerModeWidget.csproj -c Release
       - name: Offline tests
         run: dotnet run --project tests/PowerModeWidget.Tests/PowerModeWidget.Tests.csproj -c Release
-      - name: Publish self-contained application
-        run: dotnet publish src/PowerModeWidget/PowerModeWidget.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:DebugType=None -p:DebugSymbols=false -o artifacts/publish
-      - name: Package
+      - name: Package portable application
         shell: pwsh
         run: |
-          Copy-Item README.md, LICENSE -Destination artifacts/publish
-          Compress-Archive -Path artifacts/publish/* -DestinationPath artifacts/PowerModeWidget-win-x64.zip
+          $packageDir = Join-Path $env:RUNNER_TEMP ('PowerModeWidget-' + [Guid]::NewGuid().ToString('N'))
+          New-Item -ItemType Directory -Path $packageDir -Force | Out-Null
+          Copy-Item -LiteralPath 'src/PowerModeWidget/bin/Release/net48/PowerModeWidget.exe', 'src/PowerModeWidget/bin/Release/net48/PowerModeWidget.exe.config', 'README.md', 'LICENSE' -Destination $packageDir
+          New-Item -ItemType Directory -Path artifacts -Force | Out-Null
+          Compress-Archive -Path (Join-Path $packageDir '*') -DestinationPath artifacts/PowerModeWidget-win-x64.zip -Force
       - uses: actions/upload-artifact@v7.0.2
         with:
           name: PowerModeWidget-win-x64

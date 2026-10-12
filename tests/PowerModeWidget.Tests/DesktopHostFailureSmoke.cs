@@ -7,48 +7,50 @@ internal static class DesktopHostFailureSmoke
 {
     public static void Run(Action<string, Action> test)
     {
-        test("Different per-monitor DPI contexts are rejected before reparenting", () =>
+        test("Different per-monitor DPI contexts are rejected before creating a desktop HWND", () =>
         {
-            var desktop = IntPtr.Zero;
+            var desktopView = IntPtr.Zero;
             EnumWindows((handle, _) =>
             {
-                desktop = FindWindowEx(handle, IntPtr.Zero, "SHELLDLL_DefView", null);
-                return desktop == IntPtr.Zero;
+                desktopView = FindWindowEx(handle, IntPtr.Zero, "SHELLDLL_DefView", null);
+                return desktopView == IntPtr.Zero;
             }, IntPtr.Zero);
-            Check(desktop != IntPtr.Zero, "Cannot locate Explorer desktop view.");
-            var desktopContext = GetWindowDpiAwarenessContext(desktop);
+            Check(desktopView != IntPtr.Zero, "Cannot locate Explorer desktop view.");
+            var desktopHost = GetParent(desktopView);
+            Check(desktopHost != IntPtr.Zero, "Cannot locate desktop host.");
+            var desktopContext = GetWindowDpiAwarenessContext(desktopHost);
             Check(GetAwarenessFromDpiAwarenessContext(desktopContext) == 2, "Expected per-monitor Explorer desktop.");
             var alternateContext = AreDpiAwarenessContextsEqual(desktopContext, new IntPtr(-4))
                 ? new IntPtr(-3) : new IntPtr(-4);
-            var window = new Window { ShowInTaskbar = false, ShowActivated = false, Topmost = false };
+            var widget = new MainWindow(new PowerModeService(new FakePowerApi()));
+            HwndSource? source = null;
+            var originalHostStyle = GetWindowLong(desktopHost, -16);
+            var originalHostExtendedStyle = GetWindowLong(desktopHost, -20);
+            var priorThreadContext = SetThreadDpiAwarenessContext(alternateContext);
+            Check(priorThreadContext != IntPtr.Zero, "Cannot set temporary test thread DPI context.");
             try
             {
-                var priorThreadContext = SetThreadDpiAwarenessContext(alternateContext);
-                Check(priorThreadContext != IntPtr.Zero, "Cannot set temporary test thread DPI context.");
-                IntPtr handle;
-                try { handle = new WindowInteropHelper(window).EnsureHandle(); }
-                finally { SetThreadDpiAwarenessContext(priorThreadContext); }
-
-                var originalContext = GetWindowDpiAwarenessContext(handle);
-                Check(GetAwarenessFromDpiAwarenessContext(originalContext) == 2,
-                    "Test window must share desktop's broad per-monitor category.");
-                Check(!AreDpiAwarenessContextsEqual(originalContext, desktopContext),
-                    "Test window needs a distinct V1/V2 context.");
-                var originalParent = GetParent(handle);
-                var originalStyle = GetWindowLong(handle, -16);
-                var originalExtendedStyle = GetWindowLong(handle, -20);
+                var testContext = GetThreadDpiAwarenessContext();
+                Check(GetAwarenessFromDpiAwarenessContext(testContext) == 2,
+                    "Test thread must share desktop's broad per-monitor category.");
+                Check(!AreDpiAwarenessContextsEqual(testContext, desktopContext),
+                    "Test thread needs a distinct V1/V2 context.");
                 var rejected = false;
-                try { DesktopHost.Attach(window); }
+                try { source = DesktopHost.Show(widget); }
                 catch (InvalidOperationException error) when (error.Message.Contains("DPI")) { rejected = true; }
 
-                Check(rejected, "Attach accepted incompatible per-monitor DPI contexts.");
-                Check(GetParent(handle) == originalParent, "Rejected attachment changed the native parent.");
-                Check(GetWindowLong(handle, -16) == originalStyle &&
-                    GetWindowLong(handle, -20) == originalExtendedStyle, "Rejected attachment changed native styles.");
-                Check(AreDpiAwarenessContextsEqual(GetWindowDpiAwarenessContext(handle), originalContext),
-                    "Rejected attachment reset the window DPI context.");
+                Check(rejected, "Show accepted incompatible per-monitor DPI contexts.");
+                Check(PresentationSource.FromVisual(widget) is null, "Rejected show created a desktop HWND.");
+                Check(GetWindowLong(desktopHost, -16) == originalHostStyle &&
+                    GetWindowLong(desktopHost, -20) == originalHostExtendedStyle,
+                    "Rejected show changed Explorer's native styles.");
             }
-            finally { window.Close(); }
+            finally
+            {
+                SetThreadDpiAwarenessContext(priorThreadContext);
+                source?.Dispose();
+                widget.Close();
+            }
         });
     }
 
@@ -65,6 +67,8 @@ internal static class DesktopHostFailureSmoke
     private static extern IntPtr FindWindowEx(IntPtr parent, IntPtr after, string className, string? windowName);
     [DllImport("user32.dll")]
     private static extern IntPtr GetWindowDpiAwarenessContext(IntPtr handle);
+    [DllImport("user32.dll")]
+    private static extern IntPtr GetThreadDpiAwarenessContext();
     [DllImport("user32.dll")]
     private static extern int GetAwarenessFromDpiAwarenessContext(IntPtr context);
     [DllImport("user32.dll")]

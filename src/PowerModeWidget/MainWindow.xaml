@@ -1,12 +1,10 @@
-<Window x:Class="PowerModeWidget.MainWindow"
-        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Power Mode Widget" Width="388" Height="170"
-        WindowStyle="None" ResizeMode="NoResize" AllowsTransparency="True"
-        Background="Transparent" Topmost="False" ShowInTaskbar="False" ShowActivated="False" WindowStartupLocation="Manual"
-        MouseMove="Window_MouseMove" MouseLeftButtonUp="Window_MouseLeftButtonUp" LostMouseCapture="Window_LostMouseCapture"
-        FontFamily="Segoe UI, Microsoft YaHei UI" Foreground="#F2F3F8">
-    <Window.Resources>
+<UserControl x:Class="PowerModeWidget.MainWindow"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Width="388" Height="170" Background="Transparent"
+             MouseMove="Window_MouseMove" MouseLeftButtonUp="Window_MouseLeftButtonUp" LostMouseCapture="Window_LostMouseCapture"
+             FontFamily="Segoe UI, Microsoft YaHei UI" Foreground="#F2F3F8">
+    <UserControl.Resources>
         <Style x:Key="HeaderButton" TargetType="Button">
             <Setter Property="Width" Value="28" />
             <Setter Property="Height" Value="28" />
@@ -70,7 +68,7 @@
                 </Setter.Value>
             </Setter>
         </Style>
-    </Window.Resources>
+    </UserControl.Resources>
     <Border Background="#171D2B" BorderBrush="#3D465C" BorderThickness="1" CornerRadius="17" Padding="17,12,17,13">
         <Grid>
             <Grid.RowDefinitions>
@@ -110,4 +108,4 @@
             </StackPanel>
         </Grid>
     </Border>
-</Window>
+</UserControl>
