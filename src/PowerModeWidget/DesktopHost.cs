@@ -19,7 +19,9 @@ internal static class DesktopHost
         if (!AreDpiAwarenessContextsEqual(GetThreadDpiAwarenessContext(), GetWindowDpiAwarenessContext(desktop)))
             throw new InvalidOperationException("桌面与小组件的 DPI 模式不兼容，无法安全附着。");
 
-        var scale = GetDpiForWindow(desktop) / 96.0;
+        var dpi = GetDpiForWindow(desktop);
+        var scale = dpi / 96.0;
+        widget.Width = Math.Min(widget.Width, 3 * GetSystemMetricsForDpi(38, dpi) / scale);
         var parameters = new HwndSourceParameters("Power Mode Widget")
         {
             ParentWindow = desktop,
@@ -113,6 +115,7 @@ internal static class DesktopHost
     [DllImport("user32.dll")] private static extern IntPtr MonitorFromWindow(IntPtr handle, uint flags);
     [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true)] private static extern bool GetMonitorInfo(IntPtr monitor, ref MonitorInfo info);
     [DllImport("user32.dll")] private static extern uint GetDpiForWindow(IntPtr handle);
+    [DllImport("user32.dll")] private static extern int GetSystemMetricsForDpi(int index, uint dpi);
     [DllImport("user32.dll")] private static extern IntPtr GetWindowDpiAwarenessContext(IntPtr handle);
     [DllImport("user32.dll")] private static extern IntPtr GetThreadDpiAwarenessContext();
     [DllImport("user32.dll")] private static extern bool AreDpiAwarenessContextsEqual(IntPtr first, IntPtr second);

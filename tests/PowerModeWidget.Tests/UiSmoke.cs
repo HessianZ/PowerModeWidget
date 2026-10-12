@@ -21,17 +21,16 @@ internal static class UiSmoke
             window.RaiseEvent(new RoutedEventArgs(FrameworkElement.LoadedEvent));
             var performance = (Button)window.FindName("PerformanceButton");
             performance.RaiseEvent(new RoutedEventArgs(ButtonBase.ClickEvent));
-            var status = (TextBlock)window.FindName("StatusText");
-            Check(status.Text.Contains("切换失败"), "Missing switch failure feedback.");
-            var error = status.ToolTip;
+            var error = window.ToolTip as string;
+            Check(error is not null && error.Contains("切换失败"), "Missing switch failure tooltip.");
             Pump(TimeSpan.FromMilliseconds(2200));
-            Check(status.Text.Contains("切换失败") && Equals(error, status.ToolTip), "Polling erased switch error too soon.");
+            Check(Equals(error, window.ToolTip), "Polling erased switch error tooltip too soon.");
             foreach (var mode in Enum.GetValues(typeof(PowerMode)).Cast<PowerMode>())
                 Check(((Button)window.FindName($"{mode}Button")).Tag is null, "Failed switch should not display selection.");
             var balanced = (Button)window.FindName("BalancedButton");
             balanced.RaiseEvent(new RoutedEventArgs(ButtonBase.ClickEvent));
             AssertMode(window, PowerMode.Balanced);
-            Check(status.ToolTip is null, "Successful manual retry should clear error immediately.");
+            Check(window.ToolTip is null, "Successful manual retry should clear error immediately.");
         }
         finally { window.Close(); }
     }
@@ -79,10 +78,12 @@ internal static class UiSmoke
             try
             {
                 if (handle != IntPtr.Zero)
-                    test("UI exit button disposes the native widget HWND", () =>
+                    test("Context-menu Exit disposes the native widget HWND", () =>
                     {
-                        ((Button)window.FindName("CloseButton")).RaiseEvent(new RoutedEventArgs(ButtonBase.ClickEvent));
-                        Check(!IsWindow(handle), "Exit button leaked the native widget HWND.");
+                        var exit = window.FindName("ExitMenuItem") as MenuItem
+                            ?? window.ContextMenu.Items.OfType<MenuItem>().Single(item => item.Name == "ExitMenuItem");
+                        exit.RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent));
+                        Check(!IsWindow(handle), "Context-menu Exit leaked the native widget HWND.");
                     });
                 window.Close();
             }
@@ -104,15 +105,7 @@ internal static class UiSmoke
             var button = (Button)window.FindName($"{mode}Button");
             Check((button.Tag as string == "Active") == (mode == expected), $"Wrong highlight for {mode}.");
         }
-        var status = (TextBlock)window.FindName("StatusText");
-        var name = expected switch
-        {
-            PowerMode.Efficiency => "最佳能效",
-            PowerMode.Balanced => "平衡",
-            PowerMode.Performance => "最佳性能",
-            _ => "未识别"
-        };
-        Check(status.Text.Contains(name), $"Wrong status: {status.Text}");
+
     }
 
     private static void Capture(FrameworkElement window, string name)

@@ -33,6 +33,17 @@ internal static class DesktopShellSmoke
             Check(FindWindowEx(parent, IntPtr.Zero, "SHELLDLL_DefView", null) != IntPtr.Zero,
                 "Widget owner must contain the actual desktop icon view.");
         });
+        test("Widget fits within three desktop icon columns and one row", () =>
+        {
+            Check(GetWindowRect(handle, out var bounds), "Cannot read widget bounds.");
+            var dpi = GetDpiForWindow(handle);
+            var column = GetSystemMetricsForDpi(38, dpi);
+            var row = GetSystemMetricsForDpi(39, dpi);
+            var width = bounds.Right - bounds.Left;
+            var height = bounds.Bottom - bounds.Top;
+            Check(column > 0 && row > 0 && width > 0 && height > 0 && width <= 3 * column && height <= row,
+                $"Widget {width}x{height}px exceeds three icon columns/one row ({3 * column}x{row}px at {dpi} DPI).");
+        });
         test("Desktop widget movement uses physical screen coordinates", () =>
         {
             Check(GetWindowRect(handle, out var before), "Cannot read widget bounds.");
@@ -74,6 +85,8 @@ internal static class DesktopShellSmoke
     [DllImport("user32.dll")] private static extern uint GetWindowThreadProcessId(IntPtr window, out uint processId);
     [DllImport("user32.dll", EntryPoint = "GetWindowLongPtrW")] private static extern IntPtr GetWindowLongPtr(IntPtr window, int index);
     [DllImport("user32.dll")] private static extern bool GetWindowRect(IntPtr window, out Rect rect);
+    [DllImport("user32.dll")] private static extern uint GetDpiForWindow(IntPtr window);
+    [DllImport("user32.dll")] private static extern int GetSystemMetricsForDpi(int index, uint dpi);
     [DllImport("user32.dll")] private static extern bool SetWindowPos(IntPtr window, IntPtr after, int x, int y, int width, int height, uint flags);
     [DllImport("user32.dll")] private static extern IntPtr WindowFromPoint(PointNative point);
     [DllImport("user32.dll")] private static extern IntPtr GetAncestor(IntPtr window, uint flags);
