@@ -64,6 +64,8 @@ v0.2.0 发布流水线：[38198889624](https://github.com/HessianZ/PowerModeWidg
 - [x] 用户确认普通应用覆盖、Win+D 返回后仍可见、没有任务栏图标。
 - [x] 程序化退出按钮检查释放原生 HWND；单实例启动退出检查通过。
 - [x] 电源模式切换、读回、外部状态同步和原始模式恢复通过；基础电源计划未变。
-- [ ] v0.3.0 公开发布与 CI 成功。
+- [x] v0.3.0 公开发布与 CI 成功；正式 ZIP 为 14,491 字节，下载包四个文件与校验值已核对。
 
 视觉和桌面行为由用户实际操作确认，程序化检查用于验证模式、原生窗口结构和资源释放，离屏预览仅用于显示界面布局。
+
+发布流水线：[38201585991](https://github.com/HessianZ/PowerModeWidget/actions/runs/38201585991)。下载：[v0.3.0](https://github.com/HessianZ/PowerModeWidget/releases/tag/v0.3.0)。正式 GitHub 包已解压在真实桌面运行，版本 0.3.0 与单实例检查通过。
