@@ -91,8 +91,13 @@ v0.2.0 发布流水线：[38198889624](https://github.com/HessianZ/PowerModeWidg
 - [x] 用户在实际桌面确认紧凑界面与三态按钮正常。
 - [x] 用户确认普通应用覆盖及 Win+D 返回后仍可见。
 - [x] 本地便携 ZIP 仅含 EXE、EXE.config、README、LICENSE；EXE 为 19,968 字节。
-- [ ] CI 发布的正式 ZIP 字节数、四个文件与校验值已核对。
-- [ ] 最新界面预览与公开仓库已更新。
-- [ ] v0.4.0 Release 已发布且 CI 成功。
+- [x] CI 发布的正式 ZIP 为 14,078 字节，仅含四个文件；EXE 为 19,968 字节、版本 0.4.0.0，SHA256 与 GitHub digest 一致。
+- [x] 最新界面预览与公开仓库已更新，发布源码提交为 3e5d2c7。
+- [x] v0.4.0 Release 已公开发布，main 与标签 CI 均成功。
+- [x] 正式下载包本地启动与单实例检查通过，第二实例立即以退出码 0 结束。
 
-早期覆盖检查曾失败，最新解锁后的 ui-diagnostic.json 为 13 / 13 通过，未再复现。用户已确认三态按钮、边框/空隙拖动、实际右键退出、普通应用覆盖及 Win+D 返回正常。任务栏和 Alt+Tab 的原生资格检查通过，本轮用户未明确确认实际 Alt+Tab 列表。公开仓库更新、CI 发布与正式下载包校验仍待完成。
+早期覆盖检查曾失败，最新解锁后的 ui-diagnostic.json 为 13 / 13 通过，未再复现。用户已确认三态按钮、边框/空隙拖动、实际右键退出、普通应用覆盖及 Win+D 返回正常。任务栏和 Alt+Tab 的原生资格检查通过，本轮用户未明确确认实际 Alt+Tab 列表。公开仓库、CI 发布与正式下载包校验已完成。用户视觉和操作确认来自本轮相同源码的本地构建；正式下载包另行验证了启动、单实例及原生窗口信息。
+
+v0.4.0 发布源码提交：`3e5d2c7`。main 流水线：[38203451637](https://github.com/HessianZ/PowerModeWidget/actions/runs/38203451637)；标签流水线：[38203550597](https://github.com/HessianZ/PowerModeWidget/actions/runs/38203550597)。下载：[v0.4.0](https://github.com/HessianZ/PowerModeWidget/releases/tag/v0.4.0)。
+
+正式 ZIP 的 SHA256：`a2c596289255bf4863769746185f072105406ef2bd85a91bbc21d2bc8fa5bdde`。只读原生检查记录为 HWND 192 × 42、Progman owner、扩展样式 `08080080`、MainWindowHandle 为 0；这些信息用于验证结构，不替代实际视觉验收。
